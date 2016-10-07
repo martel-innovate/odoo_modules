@@ -36,10 +36,6 @@
             <field name="target">new</field>
         </record>
 
-        <menuitem name="Import Leave Requests" id="menu_import_leave_requests" 
-                parent="hr_holidays.menu_open_ask_holidays" action="action_import_leave_requests" 
-                groups="base.group_hr_manager" sequence="15"/>
-
     </data>
 </openerp>
 
