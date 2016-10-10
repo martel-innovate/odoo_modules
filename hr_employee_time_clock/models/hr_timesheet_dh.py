@@ -298,7 +298,7 @@ class hr_timesheet_dh(osv.osv):
             # Done BY Addition IT Solutions: BEGIN
             for att in timesheet.period_ids:
                 if att.name == date_line.strftime('%Y-%m-%d'):
-                    worked_hours = att.total_attendance
+                    worked_hours = att.total_timesheet
             # END
 
             diff = worked_hours - dh
