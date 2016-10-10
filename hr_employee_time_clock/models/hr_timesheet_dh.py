@@ -100,8 +100,6 @@ class hr_timesheet_dh(osv.osv):
 
     def get_overtime(self, cr, uid, ids, start_date, context=None):
         for sheet in self.browse(cr, uid, ids, context):
-            if sheet.state == 'done':
-                return sheet.total_duty_hours_done * -1
             return self.calculate_diff(cr, uid, ids, start_date, context)
 
     def _overtime_diff(self, cr, uid, ids, name, args, context=None):
@@ -348,4 +346,5 @@ class hr_timesheet_dh(osv.osv):
 
     def calculate_diff(self, cr, uid, ids, end_date=None, context=None):
         for sheet in self.browse(cr, uid, ids, context):
-            return sheet.total_duty_hours * (-1)
+            data = self.attendance_analysis(cr, uid, sheet.id, context=context)
+            return data['total']['work_current_month_diff']
