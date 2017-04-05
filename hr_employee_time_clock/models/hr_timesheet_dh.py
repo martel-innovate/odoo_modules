@@ -269,7 +269,7 @@ class HrTimesheetDh(models.Model):
                     worked_hours = 0.0
                     for att in sheet.period_ids:
                         if att.name == date_line.strftime('%Y-%m-%d'):
-                            worked_hours = att.total_attendance
+                            worked_hours = att.total_timesheet
 
                     diff = worked_hours - dh
                     current_month_diff += diff
