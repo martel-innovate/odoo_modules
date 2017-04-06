@@ -37,9 +37,8 @@ class HrTimesheetDh(models.Model):
     @api.multi
     def _duty_hours(self):
         for sheet in self:
-            sheet['total_duty_hours'] = 0.0
-            if sheet.state == 'done':
-                sheet['total_duty_hours'] = sheet.total_duty_hours_done
+            if sheet.state == 'done' and 'total_duty_hours_done' in sheet and sheet['total_duty_hours_done']:
+                sheet['total_duty_hours'] = sheet['total_duty_hours_done']
             else:
                 dates = list(rrule.rrule(rrule.DAILY,
                                          dtstart=parser.parse(sheet.date_from),
@@ -51,8 +50,7 @@ class HrTimesheetDh(models.Model):
                                                             period=period,
                                                             )
                     sheet['total_duty_hours'] += duty_hours
-                sheet['total_duty_hours'] = (sheet.total_duty_hours -
-                                             sheet.total_attendance)
+                sheet['total_duty_hours_done'] = sheet['total_duty_hours']
 
     @api.multi
     def count_leaves(self, date_from, employee_id, period):
@@ -91,12 +89,13 @@ class HrTimesheetDh(models.Model):
     def get_overtime(self, start_date):
         for sheet in self:
             if sheet.state == 'done':
-                return sheet.total_duty_hours_done * -1
+                return sheet.total_timesheet - sheet.total_duty_hours_done
             return self.calculate_diff(start_date)
 
     @api.multi
     def _overtime_diff(self):
         for sheet in self:
+            # What is this? why day and not month?
             old_timesheet_start_from = parser.parse(
                 sheet.date_from) - timedelta(days=1)
             prev_timesheet_diff = \
@@ -109,6 +108,7 @@ class HrTimesheetDh(models.Model):
                 prev_timesheet_diff)
             sheet['prev_timesheet_diff'] = prev_timesheet_diff
 
+    # Pupulate Overtime Analysis table data with results from attendance_analysis
     @api.multi
     def _get_analysis(self):
         res = {}
@@ -149,22 +149,29 @@ class HrTimesheetDh(models.Model):
             output.append('</table>')
             sheet['analysis'] = '\n'.join(output)
 
+    # This used to start as "expected to be done" and finish as "monthly diff"
+    # Now this will remain as the expected time always.
     total_duty_hours = fields.Float(compute='_duty_hours',
                                     string='Total Duty Hours',
                                     multi="_duty_hours")
+    # Remains as cache of the total_duty_hours.
     total_duty_hours_done = fields.Float(string='Total Duty Hours',
                                          readonly=True,
                                          default=0.0)
+    # WTF is this for???
     total_diff_hours = fields.Float(string='Total Diff Hours',
                                     readonly=True,
                                     default=0.0)
+    # This is the "Total balance", the final result considering all past deltas.
     calculate_diff_hours = fields.Char(compute='_overtime_diff',
                                        string="Diff (worked-duty)",
                                        multi="_diff")
+    # This is the delta of the previous month.
     prev_timesheet_diff = fields.Char(compute='_overtime_diff',
                                       method=True,
                                       string="Diff from old",
                                       multi="_diff")
+    # This constructs the "Overtime Analysys" tab content (table)
     analysis = fields.Text(compute='_get_analysis',
                            type="text",
                            string="Attendance Analysis")
@@ -310,15 +317,15 @@ class HrTimesheetDh(models.Model):
     @api.multi
     def write(self, vals):
         if 'state' in vals and vals['state'] == 'done':
-            vals['total_diff_hours'] = self.calculate_diff(None)
             for sheet in self:
-                vals['total_duty_hours_done'] = sheet.total_duty_hours
+                vals['total_diff_hours'] = sheet.calculate_diff_hours
+                vals['total_duty_hours_done'] = sheet['total_duty_hours_done']
         elif 'state' in vals and vals['state'] == 'draft':
-            vals['total_diff_hours'] = 0.0
+            vals['total_diff_hours'] = sheet.calculate_diff_hours
         res = super(HrTimesheetDh, self).write(vals)
         return res
 
     @api.multi
     def calculate_diff(self, end_date=None):
         for sheet in self:
-            return sheet.total_duty_hours * (-1)
+            return (sheet.total_timesheet - sheet.total_duty_hours)

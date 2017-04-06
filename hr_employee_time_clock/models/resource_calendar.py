@@ -21,7 +21,7 @@
 ##############################################################################
 
 import datetime as dtime
-
+import math
 from datetime import datetime
 from openerp import api, fields, models, _
 
@@ -52,9 +52,9 @@ class ResourceCalendar(models.Model):
                                      end_dt=None, leaves=None,
                                      compute_leaves=False, resource_id=None,
                                      default_interval=None, context=None):
-
         if isinstance(ids, (list, tuple)):
             ids = ids[0]
+
         work_limits = []
         if start_dt is None and end_dt is not None:
             start_dt = end_dt.replace(hour=0, minute=0, second=0)
@@ -89,9 +89,16 @@ class ResourceCalendar(models.Model):
         working_intervals = []
         for calendar_working_day in self.get_attendances_for_weekdays(
                 ids, [start_dt.weekday()]):
+
+            # Adding this fix, which is similar to the one in TimeClockResourceCalendar.
+            # But still didn't figure out why the "overriden method" is not called and this code is.
+            minutes_from = round(math.modf(calendar_working_day.hour_from)[0] * 60)
+            minutes_to = round(math.modf(calendar_working_day.hour_to)[0] * 60)
             working_interval = (
-                work_dt.replace(hour=int(calendar_working_day.hour_from)),
-                work_dt.replace(hour=int(calendar_working_day.hour_to))
+                work_dt.replace(hour=int(calendar_working_day.hour_from),
+                                minute=int(minutes_from)),
+                work_dt.replace(hour=int(calendar_working_day.hour_to),
+                                minute=int(minutes_to))
             )
             working_intervals += self.interval_remove_leaves(working_interval,
                                                              work_limits)
