@@ -321,7 +321,8 @@ class HrTimesheetDh(models.Model):
                 vals['total_diff_hours'] = sheet.calculate_diff_hours
                 vals['total_duty_hours_done'] = sheet['total_duty_hours_done']
         elif 'state' in vals and vals['state'] == 'draft':
-            vals['total_diff_hours'] = sheet.calculate_diff_hours
+            for sheet in self:
+                vals['total_diff_hours'] = sheet.calculate_diff_hours
         res = super(HrTimesheetDh, self).write(vals)
         return res
 
