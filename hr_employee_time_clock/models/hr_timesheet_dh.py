@@ -158,16 +158,16 @@ class HrTimesheetDh(models.Model):
     total_duty_hours_done = fields.Float(string='Total Duty Hours',
                                          readonly=True,
                                          default=0.0)
-    # WTF is this for???
+    # What is this for?
     total_diff_hours = fields.Float(string='Total Diff Hours',
                                     readonly=True,
                                     default=0.0)
     # This is the "Total balance", the final result considering all past deltas.
-    calculate_diff_hours = fields.Char(compute='_overtime_diff',
+    calculate_diff_hours = fields.Float(compute='_overtime_diff',
                                        string="Diff (worked-duty)",
                                        multi="_diff")
     # This is the delta of the previous month.
-    prev_timesheet_diff = fields.Char(compute='_overtime_diff',
+    prev_timesheet_diff = fields.Float(compute='_overtime_diff',
                                       method=True,
                                       string="Diff from old",
                                       multi="_diff")
